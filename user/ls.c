@@ -30,12 +30,12 @@ ls(char *path)
   struct dirent de;
   struct stat st;
 
-  if((fd = open(path, 0)) < 0){
+  if((fd = open(path, 0)) < 0){               //打开文件、文件夹路径
     fprintf(2, "ls: cannot open %s\n", path);
     return;
   }
 
-  if(fstat(fd, &st) < 0){
+  if(fstat(fd, &st) < 0){    //读取路径信息
     fprintf(2, "ls: cannot stat %s\n", path);
     close(fd);
     return;
