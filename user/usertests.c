@@ -1773,7 +1773,7 @@ void
 sbrkarg(char *s)
 {
   char *a;
-  int fd, n;
+  int fd;
 
   a = sbrk(PGSIZE);
   fd = open("sbrk", O_CREATE|O_WRONLY);
@@ -1782,18 +1782,24 @@ sbrkarg(char *s)
     printf("%s: open sbrk failed\n", s);
     exit(1);
   }
+  int n;
   if ((n = write(fd, a, PGSIZE)) < 0) {
     printf("%s: write sbrk failed\n", s);
+    // printf("===================================================\n");
     exit(1);
   }
+  
   close(fd);
 
   // test writes to allocated memory
   a = sbrk(PGSIZE);
+  // printf("===================================================\n");
   if(pipe((int *) a) != 0){
     printf("%s: pipe() failed\n", s);
+    // printf("===================================================\n"); 
     exit(1);
-  } 
+  }
+  
 }
 
 void
@@ -1949,7 +1955,10 @@ stacktest(char *s)
     char *sp = (char *) r_sp();
     sp -= PGSIZE;
     // the *sp should cause a trap.
+    // printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+    // printf("wrong stack point:%p\n",sp);
     printf("%s: stacktest: read below stack %p\n", *sp);
+    // printf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
     exit(1);
   } else if(pid < 0){
     printf("%s: fork failed\n", s);
@@ -2173,7 +2182,15 @@ main(int argc, char *argv[])
     {bigdir, "bigdir"}, // slow
     { 0, 0},
   };
-    
+
+  //   struct test {
+  //   void (*f)(char *);
+  //   char *s;
+  // } tests[] = {
+  //   {stacktest, "stacktest"},
+  //   { 0, 0},
+  // };
+
   printf("usertests starting\n");
 
   if(open("usertests.ran", 0) >= 0){

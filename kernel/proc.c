@@ -39,6 +39,8 @@ procinit(void)
       if(pa == 0)
         panic("kalloc");
       uint64 va = KSTACK((int) (p - proc));
+      // printf("stack va addr %d : %p\n",1,va);
+      // printf("stack pa addr %d : %p\n",1,pa);
       kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
       p->kstack = va;
   }
@@ -164,10 +166,18 @@ proc_pagetable(struct proc *p)
   // to/from user space, so not PTE_U.
   mappages(pagetable, TRAMPOLINE, PGSIZE,
            (uint64)trampoline, PTE_R | PTE_X);
+  
+  
+    // printf("pagetable:%p\n",pagetable);
+  
+  // vmprint(pagetable);
+  
 
   // map the trapframe just below TRAMPOLINE, for trampoline.S.
   mappages(pagetable, TRAPFRAME, PGSIZE,
            (uint64)(p->tf), PTE_R | PTE_W);
+  
+  // vmprint(pagetable);
 
   return pagetable;
 }
@@ -241,6 +251,34 @@ growproc(int n)
   return 0;
 }
 
+
+int
+lazy_growproc(int n)
+{
+  uint sz;
+  struct proc *p = myproc();
+
+  sz = p->sz;
+  // if(n > 0){
+  //   if((sz = uvmalloc(p->pagetable, sz, sz + n)) == 0) {
+  //     return -1;
+  //   }
+  // } 
+  if(n > 0)
+  {
+    sz = PGROUNDUP(sz + n);
+  }
+  if(n < 0)
+  {
+    sz = uvmdealloc(p->pagetable, sz, sz + n);
+  }
+  // else if(n < 0){
+  //   sz = uvmdealloc(p->pagetable, sz, sz + n);
+  // }
+  p->sz = sz;
+  return 0;
+}
+
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
 int
@@ -249,7 +287,6 @@ fork(void)
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
-
   // Allocate process.
   if((np = allocproc()) == 0){
     return -1;
@@ -284,7 +321,6 @@ fork(void)
   np->state = RUNNABLE;
 
   release(&np->lock);
-
   return pid;
 }
 
@@ -321,7 +357,6 @@ void
 exit(int status)
 {
   struct proc *p = myproc();
-
   if(p == initproc)
     panic("init exiting");
 
@@ -375,6 +410,7 @@ exit(int status)
 
   release(&original_parent->lock);
 
+  
   // Jump into the scheduler, never to return.
   sched();
   panic("zombie exit");

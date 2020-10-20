@@ -20,6 +20,7 @@ exec(char *path, char **argv)
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
   struct proc *p = myproc();
+  // int checkpoint = 0;
 
   begin_op(ROOTDEV);
 
@@ -37,7 +38,14 @@ exec(char *path, char **argv)
 
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
-
+  
+  // if(strncmp(path,"/init",5) == 0)
+  // {
+  //   // printf("pagetable:%p\n",pagetable);
+  //   printf("=============%d==========\n",checkpoint++);
+  //   vmprint(pagetable);
+  // }
+ 
   // Load program into memory.
   sz = 0;
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
@@ -55,6 +63,12 @@ exec(char *path, char **argv)
       goto bad;
     if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
       goto bad;
+  //   if(strncmp(path,"/init",5) == 0)
+  // {
+  //   // printf("pagetable:%p\n",pagetable);
+  //   printf("=============%d==========\n",checkpoint++);
+  //   vmprint(pagetable);
+  // }
   }
   iunlockput(ip);
   end_op(ROOTDEV);
@@ -72,6 +86,12 @@ exec(char *path, char **argv)
   sp = sz;
   stackbase = sp - PGSIZE;
 
+  if(strncmp(path,"/init",5) == 0)
+  {
+    // printf("pagetable:%p\n",pagetable);
+    // printf("=============%d==========\n",checkpoint++);
+    vmprint(pagetable);
+  }
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
@@ -91,6 +111,7 @@ exec(char *path, char **argv)
   sp -= sp % 16;
   if(sp < stackbase)
     goto bad;
+
   if(copyout(pagetable, sp, (char *)ustack, (argc+1)*sizeof(uint64)) < 0)
     goto bad;
 

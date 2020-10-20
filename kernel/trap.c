@@ -67,9 +67,40 @@ usertrap(void)
     syscall();
   } else if((which_dev = devintr()) != 0){
     // ok
-  } else {
+  } 
+  else if(r_scause() == 13 || r_scause() == 15)
+  {
+    // printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+    // printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    if(r_stval() > p->sz)
+    {
+      p->killed = 1;
+    }
+    else if (r_stval() < p->tf->sp)
+    {
+      // printf("sp:%p\n",p->tf->sp);
+      // printf("va:%p\n",r_stval());
+      p->killed = 1;
+    }
+    else
+    {
+      // printf("sp:%p\n",p->tf->sp);
+      // printf("top of stack:%p\n",p->tf->kernel_sp);
+      int re = uvmalloc(p->pagetable, PGROUNDDOWN(r_stval()), PGROUNDDOWN(r_stval()) + 4096);
+      if(re == 0) p->killed = 1;
+    }
+  }
+  else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
     printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    printf("page down:%d\n",PGROUNDDOWN(r_stval()));
+    // printf("r :%d\n",r_scause());
+    // int sz = 0;
+    // while( !(r_stval()>=sz && r_stval()<sz+4096) )
+    // {
+    //   sz = sz + 4096;
+    // }
+    // printf("sz:%d\n",sz);
     p->killed = 1;
   }
 

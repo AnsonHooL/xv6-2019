@@ -22,8 +22,10 @@ sparse_memory(char *s)
   }
   new_end = prev_end + REGION_SZ;
 
+  
   for (i = prev_end + PGSIZE; i < new_end; i += 64 * PGSIZE)
     *(char **)i = i;
+
 
   for (i = prev_end + PGSIZE; i < new_end; i += 64 * PGSIZE) {
     if (*(char **)i != i) {
@@ -31,6 +33,7 @@ sparse_memory(char *s)
       exit(1);
     }
   }
+
 
   exit(0);
 }
@@ -51,18 +54,22 @@ sparse_memory_unmap(char *s)
   for (i = prev_end + PGSIZE; i < new_end; i += PGSIZE * PGSIZE)
     *(char **)i = i;
 
+  // printf("lazy checkpoint1\n");
   for (i = prev_end + PGSIZE; i < new_end; i += PGSIZE * PGSIZE) {
     pid = fork();
     if (pid < 0) {
       printf("error forking\n");
       exit(1);
     } else if (pid == 0) {
+      // printf("lazy checkpoint child1%p\n",i);
       sbrk(-1L * REGION_SZ);
       *(char **)i = i;
+      // printf("lazy checkpoint child2%p\n",i);
       exit(0);
     } else {
       int status;
       wait(&status);
+      // printf("lazy checkpoint parent\n");
       if (status == 0) {
         printf("memory not unmapped\n");
         exit(1);
