@@ -65,19 +65,32 @@ usertrap(void)
     intr_on();
 
     syscall();
-  } else if((which_dev = devintr()) != 0){
+  } 
+  else if((which_dev = devintr()) != 0){
     // ok
-  } else {
-    // printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
-    // printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
-    
-    if(r_stval() < myproc()->tf->sp)
+  }
+  else if(r_scause() == 13 || r_scause() == 15)
+  {
+    if(r_stval() > myproc()->sz)
     {
       p->killed = 1;
       goto ERR;
     }
+    // if(r_stval() < myproc()->tf->sp)
+    // {
+    //   printf()
+    //   // p->killed = 1;
+    //   // goto ERR;
+    // }
+    
+
 
     pte_t* pte = walk(myproc()->pagetable, PGROUNDDOWN(r_stval()), 0);
+    if(!(*pte & PTE_U))
+    {
+      p->killed = 1;
+      goto ERR;
+    }
     if(pte == 0 || *pte ==0)
     {
       p->killed = 1;
@@ -88,12 +101,16 @@ usertrap(void)
       p->killed = 1;
       goto ERR;
     }
-
-    
-
     int a = uvmalloc1(myproc()->pagetable,PGROUNDDOWN(r_stval()),PGROUNDDOWN(r_stval()) + PGSIZE);
     if(a == 0)
       p->killed = 1;
+  } 
+  else 
+  {
+    printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
+    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+
+    p->killed = 1;
   }
 
 ERR:
