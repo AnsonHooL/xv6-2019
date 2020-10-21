@@ -6,6 +6,7 @@
 #include "defs.h"
 #include "fs.h"
 
+extern char phypagemap[128*1024];
 /*
  * the kernel's page table.
  */
@@ -254,6 +255,13 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
       uvmdealloc(pagetable, a, oldsz);
       return 0;
     }
+    // printf("uvmalloc :%p\n",mem);
+    if((uint64)mem < 0x80000000L || (uint64)mem >0x88000000L)
+    {
+      panic("ss");
+    }
+    phypagemap[0] = 1;
+    printf("%d \n",phypagemap[0]);
     memset(mem, 0, PGSIZE);
     if(mappages(pagetable, a, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0){
       kfree(mem);

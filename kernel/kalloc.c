@@ -23,6 +23,8 @@ struct {
   struct run *freelist;
 } kmem;
 
+char phypagemap[128*1024] = {220};
+
 void
 kinit()
 {
@@ -76,6 +78,8 @@ kalloc(void)
     kmem.freelist = r->next;
   release(&kmem.lock);
 
+  // printf("kalloc   :%p\n",r);
+  // printf("end      :%p\n",end);
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
