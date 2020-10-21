@@ -12,6 +12,7 @@ static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uin
 int
 exec(char *path, char **argv)
 {
+  // printf("tttttttttttttttttt\n");
   char *s, *last;
   int i, off;
   uint64 argc, sz, sp, ustack[MAXARG+1], stackbase;
@@ -27,6 +28,7 @@ exec(char *path, char **argv)
     end_op(ROOTDEV);
     return -1;
   }
+  
   ilock(ip);
 
   // Check ELF header
@@ -37,7 +39,7 @@ exec(char *path, char **argv)
 
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
-
+  
   // Load program into memory.
   sz = 0;
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){

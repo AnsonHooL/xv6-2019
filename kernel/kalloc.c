@@ -23,13 +23,18 @@ struct {
   struct run *freelist;
 } kmem;
 
-char phypagemap[128*1024] = {220};
+#define TABLESIZE 32*1024
+char phypagemap[TABLESIZE] = {0};
 
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
   freerange(end, (void*)PHYSTOP);
+  for(int i=0;i<TABLESIZE;i++)
+  {
+    phypagemap[i] = 0;
+  }
 }
 
 void
@@ -38,7 +43,42 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
-    kfree(p);
+    initkfree(p);
+}
+
+void
+pgindexadd(uint64 pa)
+{
+  if((uint64)pa < 0x80000000L || (uint64)pa >0x88000000L)
+  {
+    panic("kalloc index wrong");
+  }
+  if(pa % PGSIZE != 0)
+  {
+    panic("unaligned.");
+  }
+  int pgindex = ((uint64)pa - 0x80000000L)/PGSIZE;
+  acquire(&kmem.lock);
+  phypagemap[pgindex]++;
+  release(&kmem.lock);
+}
+
+
+void
+pgindexplus(uint64 pa)
+{
+  if((uint64)pa < 0x80000000L || (uint64)pa >0x88000000L)
+  {
+    panic("kalloc index wrong");
+  }
+  if(pa % PGSIZE != 0)
+  {
+    panic("unaligned.");
+  }
+  int pgindex = ((uint64)pa - 0x80000000L)/PGSIZE;
+  acquire(&kmem.lock);
+  phypagemap[pgindex]--;
+  release(&kmem.lock);
 }
 
 // Free the page of physical memory pointed at by v,
@@ -46,12 +86,51 @@ freerange(void *pa_start, void *pa_end)
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
 void
+initkfree(void *pa)
+{
+  struct run *r;
+
+  if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
+    panic("kfree");
+
+  // acquire(&kmem.lock);
+  // int pgindex = ((uint64)pa - 0x80000000L)/PGSIZE;
+  // phypagemap[pgindex]--;
+  // if(phypagemap[pgindex] > 0) 
+  // {
+  //   release(&kmem.lock);
+  //   return;
+  // }
+  // release(&kmem.lock);
+
+  // Fill with junk to catch dangling refs.
+  memset(pa, 1, PGSIZE);
+
+  r = (struct run*)pa;
+
+  acquire(&kmem.lock);
+  r->next = kmem.freelist;
+  kmem.freelist = r;
+  release(&kmem.lock);
+}
+
+void
 kfree(void *pa)
 {
   struct run *r;
 
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
+
+  acquire(&kmem.lock);
+  int pgindex = ((uint64)pa - 0x80000000L)/PGSIZE;
+  phypagemap[pgindex]--;
+  if(phypagemap[pgindex] > 0) 
+  {
+    release(&kmem.lock);
+    return;
+  }
+  release(&kmem.lock);
 
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
@@ -82,5 +161,7 @@ kalloc(void)
   // printf("end      :%p\n",end);
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+  if(r)
+    pgindexadd((uint64)r);
   return (void*)r;
 }

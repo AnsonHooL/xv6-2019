@@ -1970,8 +1970,10 @@ pgbug(char *s)
 {
   char *argv[1];
   argv[0] = 0;
+  // printf("=================exec===================\n");
   exec((char*)0xeaeb0b5b00002f5e, argv);
-
+  // printf("=================exec===================\n");
+  // printf("xxxx222222222222xxxxxxxxx\n");
   pipe((int*)0xeaeb0b5b00002f5e);
 
   exit(0);
@@ -2173,7 +2175,8 @@ main(int argc, char *argv[])
     {bigdir, "bigdir"}, // slow
     { 0, 0},
   };
-    
+
+ 
   printf("usertests starting\n");
 
   if(open("usertests.ran", 0) >= 0){

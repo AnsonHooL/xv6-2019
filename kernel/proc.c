@@ -333,7 +333,7 @@ exit(int status)
       p->ofile[fd] = 0;
     }
   }
-
+ 
   begin_op(ROOTDEV);
   iput(p->cwd);
   end_op(ROOTDEV);
@@ -366,17 +366,19 @@ exit(int status)
 
   // Give any children to init.
   reparent(p);
-
+ 
   // Parent might be sleeping in wait().
   wakeup1(original_parent);
-
+  
   p->xstate = status;
   p->state = ZOMBIE;
 
   release(&original_parent->lock);
 
   // Jump into the scheduler, never to return.
+   
   sched();
+ 
   panic("zombie exit");
 }
 
@@ -414,6 +416,7 @@ wait(uint64 addr)
             release(&p->lock);
             return -1;
           }
+      
           freeproc(np);
           release(&np->lock);
           release(&p->lock);
@@ -503,6 +506,7 @@ sched(void)
   intena = mycpu()->intena;
   swtch(&p->context, &mycpu()->scheduler);
   mycpu()->intena = intena;
+  
 }
 
 // Give up the CPU for one scheduling round.

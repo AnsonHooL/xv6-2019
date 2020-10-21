@@ -32,9 +32,12 @@ simpletest()
     printf("fork() failed\n");
     exit(-1);
   }
-
+ 
   if(pid == 0)
+  {
     exit(0);
+  }
+    
 
   wait(0);
 
