@@ -461,7 +461,7 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
-        swtch(&c->scheduler, &p->context);
+        swtch(&c->scheduler, &p->context); //调度
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
@@ -469,7 +469,7 @@ scheduler(void)
 
         found = 1;
       }
-      release(&p->lock);
+      release(&p->lock);  //这里释放的是scheduler的锁
     }
     if(found == 0){
       intr_on();
@@ -501,7 +501,7 @@ sched(void)
     panic("sched interruptible");
 
   intena = mycpu()->intena;
-  swtch(&p->context, &mycpu()->scheduler);
+  swtch(&p->context, &mycpu()->scheduler); //被调度
   mycpu()->intena = intena;
 }
 
@@ -513,7 +513,7 @@ yield(void)
   acquire(&p->lock);
   p->state = RUNNABLE;
   sched();
-  release(&p->lock);
+  release(&p->lock);     //这里释放的是scheduler的锁
 }
 
 // A fork child's very first scheduling by scheduler()
