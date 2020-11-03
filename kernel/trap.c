@@ -78,7 +78,25 @@ usertrap(void)
 
   // give up the CPU if this is a timer interrupt.
   if(which_dev == 2)
-    yield();
+  {
+      struct proc *p = myproc();
+      if(p->tickinterval != 0 )
+      {
+        p->pastticktime++;
+        if(p->pastticktime >= p->tickinterval)
+        {
+          printf("time\n");
+          p->pastticktime = 0;
+          //saved rigister before handler func
+          p->oldframe = *p->tf;
+          // p->timepc = p->tf->epc;
+          p->tf->epc = (uint64)p->handler; 
+          
+        }
+      }
+      yield();
+  }
+    
 
   usertrapret();
 }
@@ -164,6 +182,7 @@ clockintr()
 {
   acquire(&tickslock);
   ticks++;
+
   wakeup(&ticks);
   release(&tickslock);
 }

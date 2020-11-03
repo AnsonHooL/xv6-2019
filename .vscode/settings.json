@@ -19,6 +19,7 @@
         "sstream": "c",
         "streambuf": "c",
         "system_error": "c",
-        "limits": "cpp"
+        "limits": "cpp",
+        "new": "cpp"
     }
 }

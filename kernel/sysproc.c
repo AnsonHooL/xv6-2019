@@ -73,6 +73,49 @@ sys_sleep(void)
   return 0;
 }
 
+typedef void(*handlertype)();
+
+uint64
+sys_sigalarm(void)
+{
+  // struct proc *p = myproc();
+  uint64 handler;
+  int interval;
+  if(argint(0,&interval)<0){
+    return -1;
+  }
+  if(argaddr(1,&handler)<0){
+    return -1;
+  }
+  myproc()->handler = (handlertype)handler;
+  myproc()->tickinterval = interval;
+ 
+  
+  // printf("handler %p\n",handler);
+  // printf("interval %d\n",interval); 
+  // p->handler = (handlertype)addr;
+  // p->tickinterval = interval;
+  // printf("i %d\n",p->tickinterval);
+  // printf("h %p\n",p->handler);
+
+  // uint64 addr;
+  // void (*handler)();
+  // int n;
+  // argint(0,&n);
+  // argaddr(1,&addr);
+  // handler = (functype)addr;
+  // printf("hello\n");
+  return 0;
+}
+
+uint64
+sys_sigreturn(void)
+{
+  // myproc()->tf->epc = myproc()->timepc;
+  *(myproc()->tf) = myproc()->oldframe;
+  return 0;
+}
+
 uint64
 sys_kill(void)
 {
