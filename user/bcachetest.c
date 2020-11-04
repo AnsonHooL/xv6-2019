@@ -104,7 +104,7 @@ test0()
         exit(1);
       }
 
-      readfile(file, N*BSIZE, 1);
+      readfile(file, N * BSIZE, 1);
 
       exit(0);
     }
