@@ -33,8 +33,8 @@
 // Contents of the header block, used for both the on-disk header block
 // and to keep track in memory of logged block# before commit.
 struct logheader {
-  int n;
-  int block[LOGSIZE];
+  int n;      //记录logged block数量？？ 
+  int block[LOGSIZE];//记录logged block no
 };
 
 struct log {
@@ -72,7 +72,7 @@ install_trans(int dev)
 
   for (tail = 0; tail < log[dev].lh.n; tail++) {
     struct buf *lbuf = bread(dev, log[dev].start+tail+1); // read log block
-    struct buf *dbuf = bread(dev, log[dev].lh.block[tail]); // read dst
+    struct buf *dbuf = bread(dev, log[dev].lh.block[tail]); // read dst 本来就在bcache上了
     memmove(dbuf->data, lbuf->data, BSIZE);  // copy block to dst
     bwrite(dbuf);  // write dst to disk
     bunpin(dbuf);

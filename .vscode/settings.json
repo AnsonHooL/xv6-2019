@@ -1,0 +1,25 @@
+{
+    "files.associations": {
+        "*.tcc": "cpp",
+        "random": "cpp",
+        "functional": "cpp",
+        "limits": "cpp",
+        "type_traits": "cpp",
+        "tuple": "cpp",
+        "atomic": "c",
+        "cmath": "c",
+        "deque": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "optional": "c",
+        "string_view": "c",
+        "algorithm": "c",
+        "fstream": "c",
+        "istream": "c",
+        "ostream": "c",
+        "numeric": "c",
+        "sstream": "c",
+        "streambuf": "c"
+    }
+}

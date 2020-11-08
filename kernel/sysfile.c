@@ -247,7 +247,7 @@ create(char *path, short type, short major, short minor)
   if((dp = nameiparent(path, name)) == 0)
     return 0;
 
-  ilock(dp);
+  ilock(dp);//锁住
 
   if((ip = dirlookup(dp, name, 0)) != 0){
     iunlockput(dp);
@@ -258,7 +258,7 @@ create(char *path, short type, short major, short minor)
     return 0;
   }
 
-  if((ip = ialloc(dp->dev, type)) == 0)
+  if((ip = ialloc(dp->dev, type)) == 0) //分配一个新的inode
     panic("create: ialloc");
 
   ilock(ip);
@@ -267,6 +267,7 @@ create(char *path, short type, short major, short minor)
   ip->nlink = 1;
   iupdate(ip);
 
+  //目录则创建目录项 ./ ../
   if(type == T_DIR){  // Create . and .. entries.
     dp->nlink++;  // for ".."
     iupdate(dp);

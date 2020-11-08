@@ -298,8 +298,9 @@ ilock(struct inode *ip)
   acquiresleep(&ip->lock);
 
   if(ip->valid == 0){
-    bp = bread(ip->dev, IBLOCK(ip->inum, sb));
-    dip = (struct dinode*)bp->data + ip->inum%IPB;
+    bp = bread(ip->dev, IBLOCK(ip->inum, sb)); //读取inode所在block buf
+    dip = (struct dinode*)bp->data + ip->inum%IPB;//找到想要的inode
+    //磁盘的inode读入内存inode
     ip->type = dip->type;
     ip->major = dip->major;
     ip->minor = dip->minor;
@@ -491,7 +492,7 @@ writei(struct inode *ip, int user_src, uint64 src, uint off, uint n)
 
   if(off > ip->size || off + n < off)
     return -1;
-  if(off + n > MAXFILE*BSIZE)
+  if(off + n > MAXFILE*BSIZE)  //bigfile要改的，限制了最大写入空间
     return -1;
 
   for(tot=0; tot<n; tot+=m, off+=m, src+=m){
