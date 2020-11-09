@@ -394,10 +394,10 @@ sys_open(void)
   {
     char target[MAXPATH];
     struct inode *tp;
-    printf("size:%d\n",ip->size);
+    // printf("size:%d\n",ip->size);
     readi(ip, 0,(uint64)target,0,ip->size );
-    printf("%s\n",target);
-    printf("%d\n",ip->size);
+    // printf("%s\n",target);
+    // printf("%d\n",ip->size);
     
     if((tp = namei(target)) == 0)
     {
@@ -407,10 +407,10 @@ sys_open(void)
       end_op(ROOTDEV);
       return -1;
     }
-    printf("type:%d\n",tp->type);
+    // printf("type:%d\n",tp->type);
 
     ilock(tp);
-    
+
     while (tp->type == T_SYMLINK)
     {
       iunlockput(ip);
@@ -421,7 +421,7 @@ sys_open(void)
       struct inode *tmp;
       if(strncmp(path,target,strlen(path)) == 0 || ((tmp = namei(target)) == 0))
       {
-        printf("wrong target:%s\n",target);
+        // printf("wrong target:%s\n",target);
         myproc()->ofile[fd] = 0;
         fileclose(f);
         end_op(ROOTDEV);
