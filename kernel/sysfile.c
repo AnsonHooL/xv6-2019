@@ -15,6 +15,8 @@
 #include "sleeplock.h"
 #include "file.h"
 #include "fcntl.h"
+#include "buf.h"
+
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -168,7 +170,57 @@ bad:
 uint64
 sys_symlink(void)
 {
+  char name[DIRSIZ], target[MAXPATH], path[MAXPATH];
+  struct inode *dp, *ip;
+  // uint addr;
+  // struct buf *bp;
+  // char*a;
 
+  if(argstr(0, target, MAXPATH) < 0 || argstr(1, path, MAXPATH) < 0)
+    return -1;
+
+  begin_op(ROOTDEV);
+
+  if((dp = nameiparent(path, name)) == 0)
+  {
+    end_op(ROOTDEV);
+    return -1;
+  }
+  ilock(dp);//先锁父目录
+  if((ip = dirlookup(dp, name, 0)) != 0){
+    iunlockput(dp);
+    end_op(ROOTDEV);
+    return -1;
+  }
+
+  if((ip = ialloc(dp->dev, T_SYMLINK)) == 0) //分配一个新的inode
+    panic("create: ialloc");
+
+  ilock(ip);//再锁子目录
+  ip->major = dp->major;
+  ip->minor = dp->minor;
+  ip->nlink = 1;
+  //TODO:no!!!!
+  // if((addr = ip->addrs[0]) == 0)
+  //     ip->addrs[0] = addr = balloc(ip->dev);
+
+  iupdate(ip);
+  if(writei(ip, 0, (uint64)target, 0, strlen(target) + 1 ) != (strlen(target)+1))
+    panic("symlink write fail");
+
+  // bp = bread(ip->dev, addr);
+  // a  = (char*)(bp->data);
+  // memcpy(a, target, strlen(target));
+  // log_write(bp);
+  // brelse(bp);
+
+  iunlockput(ip); 
+
+  if(dirlink(dp, name, ip->inum) < 0)
+    panic("create: dirlink");
+
+  iunlockput(dp);
+  end_op(ROOTDEV);
   return 0;
 }
 
@@ -329,13 +381,68 @@ sys_open(void)
     end_op(ROOTDEV);
     return -1;
   }
-
+  
   if((f = filealloc()) == 0 || (fd = fdalloc(f)) < 0){
     if(f)
       fileclose(f);
     iunlockput(ip);
     end_op(ROOTDEV);
     return -1;
+  }
+
+  if(ip->type == T_SYMLINK && !(omode & O_NOFOLLOW))
+  {
+    char target[MAXPATH];
+    struct inode *tp;
+    printf("size:%d\n",ip->size);
+    readi(ip, 0,(uint64)target,0,ip->size );
+    printf("%s\n",target);
+    printf("%d\n",ip->size);
+    
+    if((tp = namei(target)) == 0)
+    {
+      myproc()->ofile[fd] = 0;
+      fileclose(f);
+      iunlockput(ip);
+      end_op(ROOTDEV);
+      return -1;
+    }
+    printf("type:%d\n",tp->type);
+
+    ilock(tp);
+    
+    while (tp->type == T_SYMLINK)
+    {
+      iunlockput(ip);
+      
+      readi(tp, 0,(uint64)target,0,tp->size);
+      // printf("%s\n",target);
+      // printf("type:%d\n",tp->type);
+      struct inode *tmp;
+      if(strncmp(path,target,strlen(path)) == 0 || ((tmp = namei(target)) == 0))
+      {
+        printf("wrong target:%s\n",target);
+        myproc()->ofile[fd] = 0;
+        fileclose(f);
+        end_op(ROOTDEV);
+        return -1;
+      }
+      ip = tp;
+      tp = tmp;
+      ilock(tp);
+    }
+    
+    // ilock(tp);
+    iunlockput(ip);
+    f->type = FD_INODE;
+    f->ip = tp;
+    f->off = 0;
+    f->readable = !(omode & O_WRONLY);
+    f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+
+    iunlock(tp); //这里要把锁丢了吗，这样才是软连接，大可不必，unlink删掉了目录项就行了，inode正常释放会把自己清理资源的
+    end_op(ROOTDEV);
+    return fd; 
   }
 
   if(ip->type == T_DEVICE){
@@ -345,6 +452,7 @@ sys_open(void)
   } else {
     f->type = FD_INODE;
   }
+
   f->ip = ip;
   f->off = 0;
   f->readable = !(omode & O_WRONLY);
