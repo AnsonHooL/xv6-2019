@@ -117,6 +117,12 @@ found:
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
 
+  for(int i=0;i<MMAPNUM;i++)
+  {
+    p->mymmap[i].valid = 1;
+  }
+  p->upperlevel = TRAPFRAME;
+ 
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof p->context);
@@ -255,6 +261,29 @@ fork(void)
     return -1;
   }
 
+  for(int i = 0; i<MMAPNUM; i++)
+  {
+    if(p->mymmap[i].valid == 0)
+    {
+     
+      np->mymmap[i].downmap = p->mymmap[i].downmap;
+      np->mymmap[i].fileinode = p->mymmap[i].fileinode;
+      np->mymmap[i].flags = p->mymmap[i].flags;
+      np->mymmap[i].offset = p->mymmap[i].offset;
+      np->mymmap[i].prot = p->mymmap[i].prot;
+      np->mymmap[i].uppermap = p->mymmap[i].uppermap;
+      np->mymmap[i].valid = p->mymmap[i].valid;
+
+      np->mymmap[i].fileinode->ref++;
+      // struct inode *ip = np->mymmap[i].fileinode;
+      // begin_op(ROOTDEV);
+      // ilock(ip);
+      // ip->nlink++;
+      // iupdate(ip);     
+      // iunlock(ip);
+      // end_op(ROOTDEV);        
+    }
+  } 
   // Copy user memory from parent to child.
   if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0){
     freeproc(np);
@@ -281,7 +310,7 @@ fork(void)
 
   pid = np->pid;
 
-  np->state = RUNNABLE;
+  np->state = RUNNABLE; 
 
   release(&np->lock);
 
@@ -334,6 +363,24 @@ exit(int status)
     }
   }
 
+  for(int i = 0; i < MMAPNUM; i++)
+  {
+    if(p->mymmap[i].valid == 0)
+    {
+      uint64 address = p->mymmap[i].downmap;
+      int size = p->mymmap[i].uppermap - p->mymmap[i].downmap;
+      uvmunmap(p->pagetable, PGROUNDDOWN(address), size, 1);
+      struct inode *ip = p->mymmap[i].fileinode;
+      begin_op(ROOTDEV);
+      // ilock(ip);
+      // ip->nlink--;
+      // iupdate(ip);
+      // iunlock(ip);
+      iput(ip);
+      end_op(ROOTDEV);
+      p->mymmap[i].valid = 1;
+    }
+  }
   begin_op(ROOTDEV);
   iput(p->cwd);
   end_op(ROOTDEV);

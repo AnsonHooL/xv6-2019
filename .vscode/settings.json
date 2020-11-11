@@ -1,0 +1,16 @@
+{
+    "files.associations": {
+        "numeric": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "system_error": "cpp",
+        "typeinfo": "cpp",
+        "functional": "cpp",
+        "string_view": "cpp",
+        "*.tcc": "cpp",
+        "random": "cpp",
+        "limits": "cpp",
+        "type_traits": "cpp"
+    }
+}

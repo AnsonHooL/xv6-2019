@@ -82,6 +82,21 @@ struct trapframe {
 
 enum procstate { UNUSED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+
+#define MMAPNUM 8
+
+typedef struct mmmap{
+  uint64 uppermap;  //maxium address one below actual address  (eg. 0~4095,uppermap = 4096) 
+  uint64 downmap;   //minium address (eg. 0~4095,downmap = 0)
+  uint64 offset;    //offset of file to read or write
+  struct inode *fileinode;//map file
+  char   flags;    //private or shared
+  char   prot;     //readable,writeable
+  char   valid;    //validable
+}mmaps;
+
+
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -103,4 +118,9 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  //mmap parameter
+  uint64  upperlevel;          //maximun user level address 
+  mmaps mymmap[MMAPNUM];          //mmap struct
+
 };

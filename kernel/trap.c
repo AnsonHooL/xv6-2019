@@ -71,10 +71,47 @@ usertrap(void)
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {
-    printf("usertrap(): unexpected scause %p (%s) pid=%d\n", r_scause(), scause_desc(r_scause()), p->pid);
-    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+    // printf("usertrap(): unexpected scause %p (%s) pid=%d\n", r_scause(), scause_desc(r_scause()), p->pid);
+    // printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+
+    for(int i = 0;i<MMAPNUM;i++)
+    {
+      if(r_stval() >= p->mymmap[i].downmap && r_stval() < p->mymmap[i].uppermap)
+      {
+        int flags = 0;
+        uint64 address = PGROUNDDOWN(r_stval());
+        uint64 offset  = (address - p->mymmap[i].downmap) + p->mymmap[i].offset;
+        flags |= PTE_U;
+        if(p->mymmap[i].prot & PROT_READ)
+        {
+          flags |= PTE_R ;
+        }
+        if(p->mymmap[i].prot & PROT_WRITE)
+        {
+          flags |= PTE_W ;
+        }
+
+        char* mem = kalloc();
+        if(mem == 0){
+          p->killed = 1;
+          goto DONEMMAP;        
+        }
+        memset(mem, 0, PGSIZE);
+        readi(p->mymmap[i].fileinode,0,(uint64)mem,offset,PGSIZE);
+        if(mappages(p->pagetable, address, PGSIZE, (uint64)mem, flags) != 0)
+        {
+          kfree(mem);
+          p->killed = 1;
+          goto DONEMMAP;  
+        }
+        goto DONEMMAP;  
+      }
+    }
+
     p->killed = 1;
   }
+
+DONEMMAP:
 
   if(p->killed)
     exit(-1);
