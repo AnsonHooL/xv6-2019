@@ -102,7 +102,35 @@ e1000_transmit(struct mbuf *m)
   // the TX descriptor ring so that the e1000 sends it. Stash
   // a pointer so that it can be freed after sending.
   //
-  return -1;
+  uint idx;
+  struct mbuf* oldmbuf;
+
+  acquire(&e1000_lock);
+
+  idx = regs[E1000_TDT];    //获取最早到达网卡的以太网帧索引
+  struct tx_desc* descriptor =  &tx_ring[idx];
+
+  if((descriptor->status & E1000_TXD_STAT_DD) == 0) //检查是否完成作业的标志位
+  {
+    release(&e1000_lock);
+    return -1;   //返回错误，会在上一层释放以太网帧
+  }
+  oldmbuf = tx_mbufs[idx];
+  if(oldmbuf)
+    mbuffree(oldmbuf);
+  
+  descriptor->addr = (uint64)m->head;
+  descriptor->cmd  = E1000_TXD_CMD_RS | E1000_TXD_CMD_EOP; //cmd?
+  descriptor->length = m->len;
+  descriptor->status = 0; //状态更新
+
+  tx_mbufs[idx] = m;
+
+  regs[E1000_TDT]  = (idx + 1) % TX_RING_SIZE;
+
+  release(&e1000_lock);
+
+  return 0;
 }
 
 static void
@@ -114,6 +142,42 @@ e1000_recv(void)
   // Check for packets that have arrived from the e1000
   // Create and deliver an mbuf for each packet (using net_rx()).
   //
+  while (1)
+  {
+    acquire(&e1000_lock);
+
+    uint idx = (regs[E1000_RDT] + 1) % RX_RING_SIZE; //计算最早收到的帧的索引，初始化位置为 RX_RING_SIZE - 1
+
+    struct rx_desc* descriptor =  &rx_ring[idx];     //描述符，e1000作业的地方
+
+    if((descriptor ->status & E1000_RXD_STAT_DD) == 0) //判断是否完成作业
+    {
+      break;
+    }
+    struct mbuf* mbuf = rx_mbufs[idx]; //获取mbuf，初始化时e1000_init会分配一个mbuf
+
+    mbufput(mbuf, descriptor->length); //设置接受的数据帧长度
+
+    struct mbuf *new_buf = mbufalloc(0);
+    if (new_buf == 0)
+      break;
+
+    rx_mbufs[idx] = new_buf;//这是一个记录mbuf的地方
+
+    rx_ring[idx].addr = (uint64) rx_mbufs[idx]->head;
+    rx_ring[idx].length = 0;
+    rx_ring[idx].status = 0;
+
+    regs[E1000_RDT] = idx;  //索引下一个位置
+
+    release(&e1000_lock);
+
+    net_rx(mbuf);
+    
+  }
+
+  release(&e1000_lock);
+  // printf("hi\n");
 }
 
 void

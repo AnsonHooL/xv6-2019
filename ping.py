@@ -8,5 +8,6 @@ buf = "this is a ping!"
 
 while True:
 	print >>sys.stderr, "pinging..."
+	print(int(sys.argv[1]))
 	sock.sendto(buf, ("127.0.0.1", int(sys.argv[1])))
 	time.sleep(1)

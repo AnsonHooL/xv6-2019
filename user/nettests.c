@@ -21,26 +21,32 @@ ping(uint16 sport, uint16 dport, int attempts)
   // you can send a UDP packet to any Internet address
   // by using a different dst.
   
+ 
   if((fd = connect(dst, sport, dport)) < 0){
     fprintf(2, "ping: connect() failed\n");
     exit(1);
   }
-
+ 
   for(int i = 0; i < attempts; i++) {
     if(write(fd, obuf, sizeof(obuf)) < 0){
       fprintf(2, "ping: send() failed\n");
       exit(1);
     }
   }
-
+  
   char ibuf[128];
   int cc = read(fd, ibuf, sizeof(ibuf));
+ 
   if(cc < 0){
     fprintf(2, "ping: recv() failed\n");
     exit(1);
   }
+  // printf("size receive :%d\n",cc);
+  // printf("size send :%d\n",sizeof(obuf));
+  // printf("receive str:%s\n",ibuf);
 
   close(fd);
+ 
   if (strcmp(obuf, ibuf) || cc != sizeof(obuf)){
     fprintf(2, "ping didn't receive correct payload\n");
     exit(1);

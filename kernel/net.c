@@ -303,7 +303,7 @@ net_rx_udp(struct mbuf *m, uint16 len, struct ip *iphdr)
   if (len > m->len)
     goto fail;
   // minimum packet size could be larger than the payload
-  mbuftrim(m, m->len - len);
+  mbuftrim(m, m->len - len); //udp data 后跟着的一堆其他信息？剥离掉反正
 
   // parse the necessary fields
   sip = ntohl(iphdr->ip_src);
