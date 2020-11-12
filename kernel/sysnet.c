@@ -151,9 +151,9 @@ sockread(struct sock* f, uint64 dsta, uint len)
   acquire(&f->lock);
   while (mbufq_empty(&f->rxq))
   {
-    printf("sleep\n");
+    // printf("sleep\n");
     sleep(f, &f->lock);   //消费者等待网络数据
-    printf("wake\n");
+    // printf("wake\n");
   }
 
   if(len < f->rxq.head->len) //一次读取的数据少于，一个UDP包存放的数据
