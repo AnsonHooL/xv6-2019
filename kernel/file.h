@@ -40,3 +40,8 @@ extern struct devsw devsw[];
 
 #define DISK 0
 #define CONSOLE 1
+
+///struct file.ref 是open，close，dup相关的
+///inode ref是内存里维护的，即当前inode的引用，如当前目录或者搜索某个目录是，get inode
+///其ref必然要++，否则删除了当前工作目录啥的，是当前使用的引用计数
+///inode nlink是磁盘持久化的，即硬链接文件个数，用于link等
