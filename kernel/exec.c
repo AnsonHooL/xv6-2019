@@ -109,7 +109,8 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
-  p->tf->epc = elf.entry;  // initial program counter = main
+  // 这里设置了新的epc
+  p->tf->epc = elf.entry;  // initial program counter = main 
   p->tf->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 

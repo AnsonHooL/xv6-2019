@@ -158,6 +158,8 @@ proc_pagetable(struct proc *p)
   // An empty page table.
   pagetable = uvmcreate();
 
+  // 下面分别映射内核的tramoline和进程的trapframe到页表中
+
   // map the trampoline code (for system call return)
   // at the highest user virtual address.
   // only the supervisor uses it, on the way
