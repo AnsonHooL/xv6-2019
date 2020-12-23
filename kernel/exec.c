@@ -10,7 +10,7 @@
 static int loadseg(pde_t *pgdir, uint64 addr, struct inode *ip, uint offset, uint sz);
 
 int
-exec(char *path, char **argv)
+exec(char *path, char **argv) //程序的路径、程序的传入参数
 {
   char *s, *last;
   int i, off;
@@ -35,10 +35,11 @@ exec(char *path, char **argv)
   if(elf.magic != ELF_MAGIC) //判断inode是否为ELF文件
     goto bad;
 
+  // 分配一个新的页表
   if((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
-  // Load program into memory.
+  // Load program into memory. 读取程序到内存，并映射至页表
   sz = 0;
   for(i=0, off=elf.phoff; i<elf.phnum; i++, off+=sizeof(ph)){
     if(readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
@@ -68,6 +69,8 @@ exec(char *path, char **argv)
   sz = PGROUNDUP(sz);
   if((sz = uvmalloc(pagetable, sz, sz + 2*PGSIZE)) == 0)
     goto bad;
+
+  //Guardpage设置访问权限  
   uvmclear(pagetable, sz-2*PGSIZE);
   sp = sz;
   stackbase = sp - PGSIZE;
@@ -109,7 +112,8 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
-  // 这里设置了新的epc
+
+  // 这里设置了新的epc为elf文件的main函数入口，到了这里已经是成功了，不会再返回调用exec的地方，转而运行新函数
   p->tf->epc = elf.entry;  // initial program counter = main 
   p->tf->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
@@ -147,7 +151,7 @@ loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset, uint sz
       n = sz - i;
     else
       n = PGSIZE;
-    if(readi(ip, 0, (uint64)pa, offset+i, n) != n)
+    if(readi(ip, 0, (uint64)pa, offset+i, n) != n) //将inode的内容读到页表映射的地方
       return -1;
   }
   
